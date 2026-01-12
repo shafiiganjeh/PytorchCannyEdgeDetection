@@ -13,12 +13,9 @@ import edge_detector as ce
 # create detector (note: original parameter names preserved)
 getedge = ce.c_edge(upper_threshold=40, lower_threshold=20, max_iterations=10)
 
-# example usage on a batch tensor: (Batch, 1, Height, Width)
-# input_tensor = torch.randn((1, 1, 480, 640), dtype=torch.float32).to(device)
-# edges = getedge(input_tensor)
 ```
 
-Input — grayscale image tensor of shape (Batch, 1, Height, Width).
+Input — grayscale image (UTF-8) tensor with shape (Batch, 1, Height, Width).
 
 Output — torch.int32 tensor of shape (Batch, 1, Height, Width) containing detected edges.
 
