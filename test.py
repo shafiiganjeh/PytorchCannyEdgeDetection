@@ -32,4 +32,8 @@ edges = edges[0].squeeze()
 npedges = edges.cpu().numpy()
 plt.imshow(npedges)
 
-# onnx_program = torch.onnx.export(getedge, test, dynamo=True)
+
+import cv2
+
+cv2.imwrite("saved_image.jpg", npedges)
+

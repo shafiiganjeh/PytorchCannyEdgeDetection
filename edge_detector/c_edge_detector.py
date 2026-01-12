@@ -73,6 +73,7 @@ class c_edge(nn.Module):
         
         x = self.hysteresis(line_mask)
         x = (x < x.shape[-1]*x.shape[-2])*255
+        # x.to(torch.int8)
         
         return x
     
