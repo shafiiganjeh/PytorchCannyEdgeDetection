@@ -1,6 +1,6 @@
 # PyTorch Canny Edge Detection
 
-Fully vectorized PyTorch implementation of the Canny edge detection algorithm with hysteresis edge tracking, packaged as a PyTorch module. This project is designed to run efficiently on a GPU and scale to high-resolution images and image batches.
+Fully vectorized PyTorch implementation of the Canny edge detection algorithm with hysteresis edge tracking, packaged as a PyTorch module. This project is intended to run on a GPU for high-resolution images and image batches.
 
 ## Usage
 
