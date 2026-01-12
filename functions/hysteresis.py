@@ -19,12 +19,11 @@ class hysteresis(nn.Module):
 
         super().__init__()
 
-        self.shape = 0
+        self.shape = [0,0,0,0]
         self.width = 0
         self.height = 0
         
-        self.val = 0
-        self.val = 0
+        self.val = torch.arange(start=0,end = 1) 
         self.max_plus = 0
         
         self.max_iterations = max_iterations
@@ -32,9 +31,9 @@ class hysteresis(nn.Module):
     def add_masked(self, x,mask,val):
         return torch.einsum('bchw,chw->bchw', mask, val)
         
-    def find_min_neighbour(self,vertex_values,mask,b_idx,h_idx, w_idx):
+    def find_min_neighbour(self,vertex_values,b_idx,h_idx, w_idx):
         
-        padded = F.pad(vertex_values, (1, 1, 1, 1), mode='constant', value=self.max_plus)
+        padded = F.pad(vertex_values, (1, 1, 1, 1), mode='constant', value=float(self.max_plus))
         device = vertex_values.device
         
         neighborhoods = []
@@ -47,7 +46,7 @@ class hysteresis(nn.Module):
         min_vals = neighborhoods_stacked.min(dim=1)[0]
         
         result = torch.full(self.shape, self.max_plus,dtype = torch.int32, device=device)
-        result[mask] = min_vals
+        result[b_idx,0,h_idx, w_idx] = min_vals
         
         return result
     
@@ -126,8 +125,17 @@ class hysteresis(nn.Module):
         return p2
     
  
-    def absolute_error_loss(self, pred, target):
-        return torch.sum(torch.abs(pred - target))
+    def absolute_error_loss(self, pred: torch.Tensor, target: torch.Tensor, 
+                        batch_idx_flat: torch.Tensor, batches: int) -> torch.Tensor:
+        l_abs = torch.abs(pred - target)
+        loss = torch.zeros(batches, dtype = torch.int32).scatter_reduce_(0,
+                                                                  batch_idx_flat,
+                                                                  l_abs,
+                                                                  reduce="sum", 
+                                                                  include_self=False)
+                
+        return loss
+    
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         
@@ -140,8 +148,10 @@ class hysteresis(nn.Module):
         self.val = self.val.view(1,self.height, self.width)
         self.max_plus = 2*self.width*self.height
 
-        mask = x.nonzero(as_tuple=True)
-        b_idx,_,h_idx, w_idx = mask
+        indices = x.nonzero()
+        b_idx = indices[:, 0]
+        h_idx = indices[:, 2]
+        w_idx = indices[:, 3]
         # make this in the def here only for testing
         vertex_values = torch.zeros(self.shape,dtype = torch.int32, device=device)
         M = (x > 1) # mb edge
@@ -156,14 +166,20 @@ class hysteresis(nn.Module):
         M = M.view(self.shape)
         
         # initialize Parent function
-        x = self.find_min_neighbour(vertex_values,mask,b_idx,h_idx, w_idx)
+        x = self.find_min_neighbour(vertex_values,b_idx,h_idx, w_idx)
+        
+        T_skip = torch.ones(self.shape[0], dtype = torch.int32)
         
         # connected component alg. simmilar to Shiloach-Vishkin algorithm but not the same.
-        for i in range(self.max_iterations):
+        while torch.sum(T_skip) > 0 and self.max_iterations > 0:
+            # get valid mask
+            batch_valid = T_skip > 0
+            M = M & batch_valid.view(-1, 1, 1, 1)
+            
             x_old = x.clone()
             # first pointer jumping
             x_1 = x.clone()
-            x_2 = self.find_min_neighbour(x_1,mask,b_idx,h_idx, w_idx)
+            x_2 = self.find_min_neighbour(x_1,b_idx,h_idx, w_idx)
             x_1 = self.pointer_jumping_op(x_1,x_2,M,batch_idx_flat, seq_idx_flat)
             
             # hooking trees 
@@ -171,8 +187,16 @@ class hysteresis(nn.Module):
             
             # second pointer jumping
             x = self.pointer_jumping_regular(x,M,batch_idx_flat, seq_idx_flat)
-            if self.absolute_error_loss(x_old[mask], x[mask]) == 0:
-                break
+            # if self.absolute_error_loss(x_old[mask], x[mask]) == 0:
+            #     break
+            T_skip = self.absolute_error_loss(x_old[b_idx,0,h_idx, w_idx], x[b_idx,0,h_idx, w_idx],batch_idx_flat,x.shape[0])
 
         return x
-    
+
+T = torch.randint(3, (1, 1,10,10))
+scripted_fn = torch.jit.script(hysteresis())
+# h = hysteresis()
+# x = h(T)
+
+
+
