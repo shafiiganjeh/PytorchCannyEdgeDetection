@@ -10,11 +10,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 print("Press 'q' to quit")
 
-getedge = ce.c_edge(upper_treshold = 20,lower_treshold = 10)
-getedge.to(device).compile()
+# getedge = ce.c_edge(upper_treshold = 20,lower_treshold = 10,max_iterations=15)
+getedge = torch.jit.script(ce.c_edge(upper_treshold = 20,lower_treshold = 10,max_iterations=15)).to(device)
+# getedge.to(device).compile()
 
-height = 600
-width = 800
+height = 1280
+width = 1960
 
 preprocess = transforms.Compose([
     
@@ -49,10 +50,15 @@ else:
             
             # inference
             start_time = time.time()
+            edges = cv2.Canny(original_frame,100,200)
+            inference_time = time.time() - start_time
+            
+            # start_time = time.time()
             input_batch= v2.Grayscale()(input_batch)
             input_batch = input_batch*255
+            input_batch =input_batch.to(torch.float16)
             output = getedge(input_batch)
-            inference_time = time.time() - start_time 
+            # inference_time = time.time() - start_time 
             
             output_np = output.squeeze().cpu().numpy()
             

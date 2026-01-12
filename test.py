@@ -17,13 +17,13 @@ tensor = tensor.to(device)
 
 test= tensor.repeat(32,1,1,1)
 
-getedge = ce.c_edge(upper_treshold = 20,lower_treshold = 10)
+getedge = ce.c_edge(upper_treshold = 40,lower_treshold = 20,max_iterations=15)
 
 # regular
-getedge.to(device)
-# jit
-# getedge = torch.jit.script(ce.c_edge(upper_treshold = 40,lower_treshold = 20))
 # getedge.to(device)
+# jit
+getedge = torch.jit.script(ce.c_edge(upper_treshold = 40,lower_treshold = 20))
+getedge.to(device)
 
 edges = getedge(tensor)
 
@@ -32,4 +32,4 @@ edges = edges[0].squeeze()
 npedges = edges.cpu().numpy()
 plt.imshow(npedges)
 
-
+# onnx_program = torch.onnx.export(getedge, test, dynamo=True)

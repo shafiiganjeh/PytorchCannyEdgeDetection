@@ -20,7 +20,7 @@ class c_edge(nn.Module):
                  kernel_size_sobel: int = 3,
                  upper_treshold: float = 20,
                  lower_treshold: float = 10,
-                 max_iterations: int = 20,
+                 max_iterations: int = 8,
                  padding_mode: str = 'reflect',
                  precision: torch.dtype = torch.float16):
         """

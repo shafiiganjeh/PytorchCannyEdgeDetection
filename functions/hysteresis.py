@@ -194,4 +194,3 @@ class hysteresis(nn.Module):
             T_skip = self.absolute_error_loss(x_old[b_idx,0,h_idx, w_idx], x[b_idx,0,h_idx, w_idx],batch_idx_flat,x.shape[0])
 
         return x
-
