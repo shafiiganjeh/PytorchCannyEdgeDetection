@@ -1,57 +1,60 @@
-## PytorchCannyEdgeDetection 
-Fully vectorized Pytorch implementation of the Canny Edge Detection Algorithm with hysteresis edge tracking as a Pytorch module. This project is intended to work on a GPU for high resolution images and image batches and real time edge detection. 
+# PyTorch Canny Edge Detection
+
+Fully vectorized PyTorch implementation of the Canny edge detection algorithm with hysteresis edge tracking, packaged as a PyTorch module. This project is designed to run efficiently on a GPU and scale to high-resolution images and image batches.
 
 ## Usage
 
----
-You can just use it like a regular module:
-```bash
+You can import and use the module like a regular PyTorch module:
+
+```python
 import torch
 import edge_detector as ce
 
-getedge = ce.c_edge(upper_treshold = 40,lower_treshold = 20,max_iterations=10)
+# create detector (note: original parameter names preserved)
+getedge = ce.c_edge(upper_threshold=40, lower_threshold=20, max_iterations=10)
 
+# example usage on a batch tensor: (Batch, 1, Height, Width)
+# input_tensor = torch.randn((1, 1, 480, 640), dtype=torch.float32).to(device)
+# edges = getedge(input_tensor)
 ```
 
-input – Grayscale Image utf-8 encoding - input tensor of shape (Batch,1,Height,Width)
+Input — grayscale image tensor of shape (Batch, 1, Height, Width).
 
-output - torch.int32 tensor of shape (Batch,1,Height,Width) 
+Output — torch.int32 tensor of shape (Batch, 1, Height, Width) containing detected edges.
 
-parameters:
-```bash
-kernel_size_gauss: int. 
-sigma_gauss: float. 
-kernel_size_sobel: int.
-upper_treshold: float.
-lower_treshold: float.
-max_iterations: int. 
-padding_mode: 'zeros', 'reflect', 'replicate', 'circular'.
-precision: 'torch.float32', 'torch.float16'.
-```
+Parameters
+- kernel_size_gauss: int — kernel size for the Gaussian blur.
+- sigma_gauss: float — standard deviation for the Gaussian blur.
+- kernel_size_sobel: int — kernel size for the Sobel operator.
+- upper_threshold: float — high threshold for double thresholding.
+- lower_threshold: float — low threshold for double thresholding.
+- max_iterations: int — maximum iterations for the hysteresis / propagation step.
+- padding_mode: one of 'zeros', 'reflect', 'replicate', 'circular' — padding mode used for convolutions.
+- precision: either torch.float32 or torch.float16 — numeric precision used for intermediate calculations.
 
-There are two examples for a simple image batch (test.py) and for real time video conversion using the webcam (webcam_test.py).
+There are two examples:
+- `test.py` — simple example for processing an image batch.
+- `webcam_test.py` — real-time video conversion using a webcam.
 
-## Steps and implementation details:
+## Steps and implementation details
 
----
+<img src="resources/example.jpeg" alt="original" width="500" style="display: block; margin: auto;" />
+<p style="text-align: center;">original</p>
 
-<img src="resources/example.jpeg" alt="Step 1" width="500" style="display: block; margin: auto;" />
-<p style="text-align: center;"> original </p>
+1. Blur the grayscale image using a Gaussian filter to reduce noise.
 
-- Blur the grayscale image using a gaussian filter to remove noise.
+<img src="resources/blur.jpg" alt="blur" width="500" style="display: block; margin: auto;" />
 
-<img src="resources/blur.jpg" alt="Step 1" width="500" style="display: block; margin: auto;" />
+2. Compute image gradients using a Sobel filter.
 
-- Calculate image gradients using a sobel filter.
+<img src="resources/gradients.jpg" alt="gradients" width="500" style="display: block; margin: auto;" />
 
-<img src="resources/gradients.jpg" alt="Step 1" width="500" style="display: block; margin: auto;" />
+3. Apply non-maximum suppression to thin edges, then apply double thresholding to classify strong and weak edge pixels.
 
-- Minimum cut-off suppression to thin out edges and Gradient thresholding to distinguish between definite edge pixels and pixels that may belong to an edge.
+<img src="resources/threshold.jpg" alt="threshold" width="500" style="display: block; margin: auto;" />
 
-<img src="resources/threshold.jpg" alt="Step 1" width="500" style="display: block; margin: auto;" />
+4. Follows chains of pixels to connect weak edge pixels to strong ones via edge tracking by hysteresis, If there is no connection to a strong pixel the weak pixel is discarted.
 
-- Follows chains of pixels to connect weak edge pixels to strong ones via edge tracking by hysteresis, If there is no connection to a strong pixel the weak pixel is discarted.
+<img src="resources/final.jpg" alt="final" width="500" style="display: block; margin: auto;" />
 
-<img src="resources/final.jpg" alt="Step 1" width="500" style="display: block; margin: auto;" />
-
-The gaussian blur and sobel kernel are implemented via seperable convolution and their kernel size can be freely choosen. Edge tracking by hysteresis is implemented using a parallel connected-components labeling algorithm to run efficinetly on a GPU, the algorithm is iterative. Usually a maximum of 5-8 iterations are more than enough.
+The Gaussian blur and Sobel kernels are implemented via separable convolution and their kernel sizes are configurable. Edge tracking by hysteresis is implemented using a parallel connected-components labeling algorithm to run efficinetly on a GPU, the algorithm is iterative. Usually a maximum of 5-8 iterations are more than enough.

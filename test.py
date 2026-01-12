@@ -32,8 +32,3 @@ edges = edges[0].squeeze()
 npedges = edges.cpu().numpy()
 plt.imshow(npedges)
 
-
-import cv2
-
-cv2.imwrite("saved_image.jpg", npedges)
-
