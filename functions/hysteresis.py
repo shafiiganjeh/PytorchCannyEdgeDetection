@@ -128,7 +128,7 @@ class hysteresis(nn.Module):
     def absolute_error_loss(self, pred: torch.Tensor, target: torch.Tensor, 
                         batch_idx_flat: torch.Tensor, batches: int) -> torch.Tensor:
         l_abs = torch.abs(pred - target)
-        loss = torch.zeros(batches, dtype = torch.int32).scatter_reduce_(0,
+        loss = torch.zeros(batches, dtype = torch.int32, device=l_abs.device).scatter_reduce_(0,
                                                                   batch_idx_flat,
                                                                   l_abs,
                                                                   reduce="sum", 
@@ -168,10 +168,13 @@ class hysteresis(nn.Module):
         # initialize Parent function
         x = self.find_min_neighbour(vertex_values,b_idx,h_idx, w_idx)
         
-        T_skip = torch.ones(self.shape[0], dtype = torch.int32)
+        T_skip = torch.ones(self.shape[0], dtype = torch.int32, device=device)
         
         # connected component alg. simmilar to Shiloach-Vishkin algorithm but not the same.
         while torch.sum(T_skip) > 0 and self.max_iterations > 0:
+            
+            self.max_iterations = self.max_iterations - 1
+            
             # get valid mask
             batch_valid = T_skip > 0
             M = M & batch_valid.view(-1, 1, 1, 1)
@@ -187,16 +190,8 @@ class hysteresis(nn.Module):
             
             # second pointer jumping
             x = self.pointer_jumping_regular(x,M,batch_idx_flat, seq_idx_flat)
-            # if self.absolute_error_loss(x_old[mask], x[mask]) == 0:
-            #     break
+            # get the loss 
             T_skip = self.absolute_error_loss(x_old[b_idx,0,h_idx, w_idx], x[b_idx,0,h_idx, w_idx],batch_idx_flat,x.shape[0])
 
         return x
-
-T = torch.randint(3, (1, 1,10,10))
-scripted_fn = torch.jit.script(hysteresis())
-# h = hysteresis()
-# x = h(T)
-
-
 

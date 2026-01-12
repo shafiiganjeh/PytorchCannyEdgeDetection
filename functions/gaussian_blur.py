@@ -43,7 +43,7 @@ class GaussianFilter(nn.Module):
         self.kernel_y = nn.Parameter(kernel_1d.view(1, 1, self.kernel_size, 1), requires_grad=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor: # (B, 1, H, W)
-
+        # convolution is seperable so his is faster than 3x3
         x = F.pad(x, (self.padding, self.padding, self.padding, self.padding), mode=self.padding_mode)
         x = F.conv2d(x, self.kernel_x, padding=0)
         x = F.conv2d(x, self.kernel_y, padding=0)

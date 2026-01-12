@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+from typing import Tuple
 
 
 class Sobel(nn.Module):
@@ -52,11 +53,11 @@ class Sobel(nn.Module):
     def _nk(self,n,k):
         return math.factorial(n)/(math.factorial(k) * math.factorial(n-k))
     
-    def forward(self, x: torch.Tensor) -> (torch.Tensor,torch.Tensor): # (B, 1, H, W)
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]: # (B, 1, H, W)
             
         
         x = F.pad(x, (self.padding, self.padding, self.padding, self.padding), mode=self.padding_mode)
-        
+        # convolution is seperable so his is faster than 3x3
         g_x = F.conv2d(x, self.sx, padding=0)
         g_x = F.conv2d(g_x, self.dx, padding=0)
         
@@ -75,6 +76,4 @@ class Sobel(nn.Module):
         self.sy.data = self.sy.data.to(device)
 
         return self
-    
-    
 
