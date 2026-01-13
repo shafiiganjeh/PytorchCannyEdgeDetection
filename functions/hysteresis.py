@@ -7,7 +7,7 @@ import torch.nn.functional as F
 class hysteresis(nn.Module):
     
     """
-    lower bound cut-off suppression
+    edge tracking
     """
     
     def __init__(self, 
