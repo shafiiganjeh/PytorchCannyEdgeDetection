@@ -138,7 +138,8 @@ class hysteresis(nn.Module):
     
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        
+
+        temp = self.max_iterations
         device = x.device
         self.shape = x.shape        
         self.width = self.shape[-1]
@@ -192,5 +193,6 @@ class hysteresis(nn.Module):
             x = self.pointer_jumping_regular(x,M,batch_idx_flat, seq_idx_flat)
             # get the loss 
             T_skip = self.absolute_error_loss(x_old[b_idx,0,h_idx, w_idx], x[b_idx,0,h_idx, w_idx],batch_idx_flat,x.shape[0])
-
+        
+        self.max_iterations = temp
         return x
